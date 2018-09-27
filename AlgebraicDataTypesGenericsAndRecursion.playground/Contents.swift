@@ -18,12 +18,14 @@ extension NatureNumber: CustomStringConvertible {
     }
 }
 
-func predecessor(_ nat: NatureNumber) -> NatureNumber? {
-    switch nat {
-    case .zero:
-        return nil
-    case let .successor(predecessor):
-        return predecessor
+extension NatureNumber {
+    var predecessor: NatureNumber? {
+        switch self {
+        case .zero:
+            return nil
+        case let .successor(predecessor):
+            return predecessor
+        }
     }
 }
 
@@ -31,18 +33,12 @@ func + (_ lhs: NatureNumber, _ rhs: NatureNumber) -> NatureNumber {
     switch (lhs, rhs) {
     case (.zero, .zero):
         return .zero
-    case let (.zero, .successor(number)):
-        return .successor(number)
-    case let (.successor(number), .zero):
-        return .successor(number)
-    case let (.successor(left), .successor(right)):
-        var copy = NatureNumber.successor(right)
-        var result = NatureNumber.successor(left)
-        while let predecessor = predecessor(copy) {
-            result = .successor(result)
-            copy = predecessor
-        }
-        return result
+    case (.zero, .successor):
+        return rhs
+    case (.successor, .zero):
+        return lhs
+    case let (.successor, .successor(right)):
+        return .successor(lhs) + right
     }
 }
 
@@ -50,11 +46,11 @@ func * (_ lhs: NatureNumber, _ rhs: NatureNumber) -> NatureNumber {
     switch (lhs, rhs) {
     case (.zero, .zero), (.zero, .successor), (.successor, .zero):
         return .zero
-    case let (.successor(left), .successor(right)):
+    case let (.successor, .successor(right)):
         var copy = right
-        var result = NatureNumber.successor(left)
-        while let predecessor = predecessor(copy) {
-            result = result + .successor(left)
+        var result = lhs
+        while let predecessor = copy.predecessor {
+            result = result + lhs
             copy = predecessor
         }
         return result
@@ -81,18 +77,20 @@ let one = NatureNumber.successor(zero)
 let two = NatureNumber.successor(one)
 let three = NatureNumber.successor(two)
 
-//three + two
-//two + three
-//one + zero
-//zero + three
-//
-//three * two
-//two * three
+let five = three + two
+assertEqual(five.description, "5")
 
-//three > two
-//two > three
-//one < zero
-//zero > zero
-//
-//min(three, two)
-//max(three, one)
+assertEqual(three + two, two + three)
+assertEqual(one + zero, zero + one)
+assertEqual(zero + three, three + zero)
+
+let six = three * two
+assertEqual(six.description, "6")
+
+assertEqual(three * two, two * three)
+assertEqual(two * zero, zero * two)
+assertEqual(one * three, three * one)
+
+assertEqual(three > two, true)
+assertEqual(two > three, false)
+assertEqual(one < zero, false)
