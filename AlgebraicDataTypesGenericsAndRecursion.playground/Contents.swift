@@ -94,3 +94,51 @@ assertEqual(one * three, three * one)
 assertEqual(three > two, true)
 assertEqual(two > three, false)
 assertEqual(one < zero, false)
+
+
+enum List<A> {
+    case empty
+    indirect case cons(A, List<A>)
+}
+
+extension List: CustomStringConvertible where A: CustomStringConvertible {
+    var description: String {
+        return getDescription(from: self, result: "]")
+    }
+    
+    private func getDescription(from list: List<A>, result: String) -> String {
+        switch list {
+        case .empty:
+            return "[" + result
+        case let .cons(head, tail):
+            return getDescription(from: tail, result: head.description + result)
+        }
+    }
+}
+
+extension List {
+    mutating func append(_ element: A) {
+        self = .cons(element, self)
+    }
+}
+
+var xs = List<Int>.empty
+xs.append(1)
+
+extension List: ExpressibleByArrayLiteral {
+    typealias ArrayLiteralElement = A
+
+    init(arrayLiteral elements: A...) {
+        if elements.isEmpty {
+            self = .empty
+        } else {
+            var temp = List<A>.empty
+            for e in elements {
+                temp.append(e)
+            }
+            self = temp
+        }
+    }
+}
+
+let ys: List<Int> = [1, 2, 3]
