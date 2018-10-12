@@ -11,6 +11,22 @@ extension NonEmpty where C: SetAlgebra {
     }
 }
 
-let xs: NonEmpty<Set<Int>> = NonEmpty(head: 1, tail:[2, 3])
+let xs: NonEmpty<Set<Int>> = NonEmpty(head: 1, tail: [2, 3])
 xs.contains(3)
 xs.contains(10)
+
+extension NonEmpty where C: SetAlgebra {
+    func union(_ other: NonEmpty) -> NonEmpty {
+        var selfUnion = tail
+        selfUnion.insert(head)
+        var otherUnion = other.tail
+        otherUnion.insert(other.head)
+        var union = selfUnion.union(otherUnion)
+        union.remove(head)
+        
+        return NonEmpty(head: head, tail: union)
+    }
+}
+
+let ys: NonEmpty<Set<Int>> = NonEmpty(head: 3, tail: [2, 1])
+ys.union(xs)
