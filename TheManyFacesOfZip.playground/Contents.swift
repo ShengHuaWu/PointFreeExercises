@@ -77,3 +77,55 @@ func zip2<A, B, R>(_ f1: Func<R, A>, _ f2: Func<R, B>) -> Func<R, (A, B)> {
         return (f1.apply(r), f2.apply(r))
     }
 }
+
+struct F3<A> {
+    let run: (@escaping (A) -> Void) -> Void
+}
+
+func map<A, B>(_ f: @escaping (A) -> B) -> (F3<A>) -> F3<B> {
+    return { f3a in
+        return F3 { callback in
+            f3a.run { a in
+                callback(f(a))
+            }
+        }
+    }
+}
+
+import Foundation
+
+func zip2<A, B>(_ fa: F3<A>, _ fb: F3<B>) -> F3<(A, B)> {
+    return F3 { callback in
+        var a: A?
+        var b: B?
+        let queue = DispatchQueue(label: "f3")
+        
+        fa.run { _a in
+            queue.sync {
+                a = _a
+                if let b = b { callback((_a, b)) }
+            }
+        }
+        
+        fb.run { _b in
+            queue.sync {
+                b = _b
+                if let a = a { callback((a, _b)) }
+            }
+        }
+    }
+}
+
+func zip2<A, B, C>(with f: @escaping (A, B) -> C) -> (F3<A>, F3<B>) -> F3<C> {
+    return { (fa, fb) in
+        return map(f)(zip2(fa, fb))
+    }
+}
+
+struct F4<A, R> {
+    let run: (@escaping (A) -> R) -> R
+}
+
+func zip2<A, B, R>(_ fa: F4<A, R>, _ fb: F4<B, R>) -> F4<(A, B), R> {
+    fatalError()
+}
