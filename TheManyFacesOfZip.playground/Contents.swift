@@ -129,3 +129,14 @@ struct F4<A, R> {
 func zip2<A, B, R>(_ fa: F4<A, R>, _ fb: F4<B, R>) -> F4<(A, B), R> {
     fatalError()
 }
+
+func zip2<A>(_ xs: [A?]) -> [A]? {
+    var result: [A] = []
+    for x in xs {
+        guard let a = x else { return nil }
+        
+        result.append(a)
+    }
+    
+    return result
+}
