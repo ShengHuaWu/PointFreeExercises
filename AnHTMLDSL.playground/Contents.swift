@@ -1,5 +1,5 @@
 enum Node {
-    indirect case el(String, [(String, String)], [Node])
+    indirect case el(String, [(String, String)], [Node], Bool)
     case text(String)
 }
 
@@ -14,16 +14,16 @@ enum Node {
 */
 
 Node.el("header", [], [
-    .el("h1", [], [.text("Point-Free")]),
+    .el("h1", [], [.text("Point-Free")], false),
     .el("p", [("id", "blurb")], [
         .text("Functional programming in Swift."),
         .el("a", [("href", "/about")], [
             .text("Learn more")
-            ]),
+            ], false),
         .text("!")
-        ]),
-    .el("img", [("src", "https://pbs.twimg.com/profile_images/907799692339269634/wQEf0_2N_400x400.jpg"), ("width", "64"), ("height", "64")], [])
-    ])
+        ], false),
+    .el("img", [("src", "https://pbs.twimg.com/profile_images/907799692339269634/wQEf0_2N_400x400.jpg"), ("width", "64"), ("height", "64")], [], true)
+    ], false)
 
 extension Node: ExpressibleByStringLiteral {
     init(stringLiteral value: String) {
@@ -32,35 +32,35 @@ extension Node: ExpressibleByStringLiteral {
 }
 
 Node.el("header", [], [
-    .el("h1", [], ["Point-Free"]),
+    .el("h1", [], ["Point-Free"], false),
     .el("p", [("id", "blurb")], [
         "Functional programming in Swift.",
         .el("a", [("href", "/about")], [
             "Learn more"
-            ]),
+            ], false),
         "!"
-        ]),
-    .el("img", [("src", "https://pbs.twimg.com/profile_images/907799692339269634/wQEf0_2N_400x400.jpg"), ("width", "64"), ("height", "64")], [])
-    ])
+        ], false),
+    .el("img", [("src", "https://pbs.twimg.com/profile_images/907799692339269634/wQEf0_2N_400x400.jpg"), ("width", "64"), ("height", "64")], [], true)
+    ], false)
 
 func header(_ attrs: [(String, String)], _ children: [Node]) -> Node {
-    return .el("header", attrs, children)
+    return .el("header", attrs, children, false)
 }
 
 func h1(_ attrs: [(String, String)], _ children: [Node]) -> Node {
-    return .el("h1", attrs, children)
+    return .el("h1", attrs, children, false)
 }
 
 func p(_ attrs: [(String, String)], _ children: [Node]) -> Node {
-    return .el("p", attrs, children)
+    return .el("p", attrs, children, false)
 }
 
 func a(_ attrs: [(String, String)], _ children: [Node]) -> Node {
-    return .el("a", attrs, children)
+    return .el("a", attrs, children, false)
 }
 
 func img(_ attrs: [(String, String)]) -> Node {
-    return .el("img", attrs, [])
+    return .el("img", attrs, [], true)
 }
 
 header([], [
@@ -129,12 +129,17 @@ let html = header([
 
 func render(_ node: Node) -> String {
     switch node {
-    case let .el(tag, attrs, children):
+    case let .el(tag, attrs, children, isVoid):
         let formattedChildren = children.map(render).joined(separator: "")
         if attrs.isEmpty {
             return "<\(tag)>\(formattedChildren)</\(tag)>"
         } else {
             let formattedAttrs = attrs.map{ key, value in "\(key)=\"\(value)\"" }.joined(separator: " ")
+            
+            guard !isVoid else {
+                return "<\(tag) \(formattedAttrs)>"
+            }
+            
             return "<\(tag) \(formattedAttrs)>\(formattedChildren)</\(tag)>"
         }
     case let .text(value):
@@ -142,10 +147,12 @@ func render(_ node: Node) -> String {
     }
 }
 
-import WebKit
+print(render(html))
 
-let webView = WKWebView(frame: .init(x: 0, y: 0, width: 320, height: 480))
-webView.loadHTMLString(render(html), baseURL: nil)
-
-import PlaygroundSupport
-PlaygroundPage.current.liveView = webView
+//import WebKit
+//
+//let webView = WKWebView(frame: .init(x: 0, y: 0, width: 320, height: 480))
+//webView.loadHTMLString(render(html), baseURL: nil)
+//
+//import PlaygroundSupport
+//PlaygroundPage.current.liveView = webView
