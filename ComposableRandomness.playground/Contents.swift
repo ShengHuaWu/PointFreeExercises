@@ -97,6 +97,10 @@ extension Gen {
             Array(repeating: (), count: count).map(self.run)
         }
     }
+    
+    func array(count: Gen<Int>) -> Gen<[A]> {
+        return array(count: count.run())
+    }
 }
 
 int(in: 0...10).array(count: 4).run()
@@ -106,9 +110,30 @@ func frequency<A>(_ pairs: [(Int, Gen<A>)]) -> Gen<A> {
         g.array(count: int)
         }
         .flatMap { $0.run() }
-    return .init {
-        element(of: xs).map { $0! }.run()
+    return element(of: xs).map { $0! }
+
+}
+
+frequency([(1, Gen { 1 }), (4, Gen { 4 }), (7, Gen { 7 })])
+    .run()
+
+extension Gen {
+    var optional: Gen<A?> {
+        return int(in: 0...3).map { $0 > 0 ? self.run() : nil }
     }
 }
 
-print(frequency([(1, Gen { 1 }), (4, Gen { 4 }), (7, Gen { 7 })]).run())
+int(in: 1...1).optional.run()
+
+extension Gen {
+    func filter(_ p: @escaping (A) -> Bool) -> Gen<A?> {
+        return self.map { p($0) ? $0 : nil }
+    }
+}
+
+int(in: 0...20)
+    .filter { $0 > 16 }
+    .run()
+
+let string: Gen<String> = Gen.init { "a" }.array(count: int(in: 0...100)).map { $0.joined() }
+string.run()
