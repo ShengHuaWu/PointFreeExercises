@@ -39,3 +39,13 @@ func array<A>(_ c: Combining<A>) -> Combining<[A]> {
         return zip(xs, ys).map(c.combine)
     }
 }
+
+struct RawRepresenting<A, RawValue> {
+    let initilize: (RawValue) -> A
+    let getRawValue: (A) -> RawValue
+}
+
+struct Comparing<A> {
+    let equating: Equating<A>
+    let compare: (A, A) -> Bool
+}
