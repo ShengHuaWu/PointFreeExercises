@@ -13,21 +13,24 @@ struct Diffing<A> {
 }
 
 struct Snapshoting<A, Snapshot> {
-    let snapshot: (A) -> Diffing<Snapshot>
+    let diffing: Diffing<Snapshot>
+    let snapshot: (A) -> Snapshot
 }
 
-let stringDiff = Diffing<String>(
-    diff: {
-        guard let difference = Diff.lines($0, $1) else { return nil }
-        return (
-            "Diff: ...\n\(difference)",
-            [XCTAttachment(string: difference)]
-        )
-    },
-    from: { String(decoding: $0, as: UTF8.self) },
-    data: { Data($0.utf8) }
-)
+extension Diffing where A == String {
+    static let lines = Diffing(
+        diff: {
+            guard let difference = Diff.lines($0, $1) else { return nil }
+            return (
+                "Diff: ...\n\(difference)",
+                [XCTAttachment(string: difference)]
+            )
+        },
+        from: { String(decoding: $0, as: UTF8.self) },
+        data: { Data($0.utf8) }
+    )
+}
 
-let stringSnapshot = Snapshoting<String, String> { _ in
-    return stringDiff
+extension Snapshoting where A == String, Snapshot == String {
+    static let lines = Snapshoting(diffing: .lines, snapshot: { $0 })
 }
