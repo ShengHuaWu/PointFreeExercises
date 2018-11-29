@@ -120,3 +120,34 @@ func contraMap<A, C, B>(_ f: @escaping (C) -> A) -> (@escaping ArgTuple<A, B>) -
         }
     }
 }
+
+struct ViewModel {
+    let name: String
+}
+
+struct ComponentViewModel {
+    let text: String
+}
+
+extension ComponentViewModel {
+    init(_ viewModel: ViewModel) {
+        self.text = viewModel.name
+    }
+}
+
+struct Applying<A> {
+    let apply: (A) -> Void
+    
+    func pullback<B>(_ f: @escaping (B) -> A) -> Applying<B> {
+        return Applying<B> { b in
+            self.apply(f(b))
+        }
+    }
+}
+
+let applyComponent = Applying<ComponentViewModel> { viewModel in
+    print(viewModel.text)
+}
+let applyViewModel: Applying<ViewModel> = applyComponent.pullback(ComponentViewModel.init)
+let vm = ViewModel(name: "Blob")
+applyViewModel.apply(vm)
