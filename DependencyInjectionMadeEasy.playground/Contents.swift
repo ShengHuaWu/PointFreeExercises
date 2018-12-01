@@ -62,13 +62,3 @@ Current.dataManager.fetchUser(1)
 Current = .mock
 let req = URLRequest(url: URL(string: "https://apple.com")!)
 Current.apiManager.sendRequest(req)
-
-
-func test() {
-    print("Hello")
-    return
-
-    print("World")
-}
-
-test()

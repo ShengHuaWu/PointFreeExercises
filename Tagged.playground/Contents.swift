@@ -95,7 +95,7 @@ struct Employee: Decodable {
     }
     
     typealias ID = Tagged<Employee, Int>
-    enum EmailTag {}
+    enum EmailTag {} // Use enum to create a new Tagged type
     typealias Email = Tagged<EmailTag, String>
     
     let id: ID
@@ -120,7 +120,7 @@ let department = departments[0]
 
 //employee.id == department.id
 
-//Employee(id: 1, name: "Jessica", email: "jessica@gmail.com", departmentID: 0)
+Employee(id: 1, name: "Jessica", email: "jessica@gmail.com", departmentID: 0)
 
 employees
     .sorted { $0.id > $1.id }
