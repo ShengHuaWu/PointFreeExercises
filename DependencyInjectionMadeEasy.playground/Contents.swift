@@ -1,64 +1,79 @@
 import Foundation
+import CoreLocation
 
-class APIManager {
-    var sendRequest = sendRequest(with:)
+class LocationManagerDelegate: NSObject, CLLocationManagerDelegate {
+    private let manager: CLLocationManager
+    private let didUpdate: ([CLLocation]) -> Void
     
-    init() {}
+    init(manager: CLLocationManager = .init(), didUpdate: @escaping ([CLLocation]) -> Void) {
+        self.manager = manager
+        self.didUpdate = didUpdate
+        
+        super.init()
+        
+        self.manager.delegate = self
+    }
     
-    convenience init(sendRequest: @escaping (URLRequest) -> Void) {
-        self.init()
-        self.sendRequest = sendRequest
+    func start() {
+        manager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        didUpdate(locations)
+        manager.stopUpdatingLocation()
     }
 }
 
-extension APIManager {
-    static let mock = APIManager { _ in
-        print("it is a mock")
+@discardableResult
+func fetchCurrentLocation(with completion: @escaping (CLLocation) -> Void) -> Any {
+    let delegate = LocationManagerDelegate { locations in
+        completion(locations.first!)
     }
-}
-
-private func sendRequest(with request: URLRequest) {
-    print("send a request")
-}
-
-class DataManager {
-    var fetchUser = fetchUser(with:)
+    delegate.start()
     
-    init() {}
-    
-    convenience init(fetchUser: @escaping (Int) -> Void) {
-        self.init()
-        self.fetchUser = fetchUser
-    }
+    return delegate
 }
 
-extension DataManager {
-    static let mock = DataManager { _ in
-        print("it is a mock")
-    }
-}
-
-private func fetchUser(with id: Int) {
-    print("fetch user info")
-    let req = URLRequest(url: URL(string: "https://apple.com")!)
-    Current.apiManager.sendRequest(req)
+struct LocationManager {
+    var fetchCurrentLocation = fetchCurrentLocation(with:)
 }
 
 struct Environment {
-    var apiManager = APIManager()
-    var dataManager = DataManager()
+    var locationManager = LocationManager()
 }
 
-extension Environment {
-    static let mock = Environment(apiManager: .mock, dataManager: .mock)
+var GlobalEnvironment = Environment()
+
+class ViewModel {
+    enum Constant {
+        static let locationReferenceKey = "this is a key"
+    }
+    
+    private var strongReferences: [String: Any] = [:]
+    var location: CLLocation?
+    
+    func updateLocation() {
+        let reference = GlobalEnvironment.locationManager.fetchCurrentLocation { [weak self] location in
+            guard let strongSelf = self else { return }
+            strongSelf.location = location
+            
+            // TODO: ...
+            
+            strongSelf.strongReferences.removeValue(forKey: Constant.locationReferenceKey)
+        }
+        
+        strongReferences[Constant.locationReferenceKey] = reference
+    }
 }
 
-var Current = Environment()
-Current.dataManager.fetchUser(1)
+var fakeLocation = CLLocation(latitude: 20, longitude: 20)
+GlobalEnvironment.locationManager.fetchCurrentLocation = { callback in
+    callback(fakeLocation)
+//    DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: { callback(fakeLocation) })
+    return ""
+}
 
-Current.apiManager = .mock
-Current.dataManager.fetchUser(1)
-
-Current = .mock
-let req = URLRequest(url: URL(string: "https://apple.com")!)
-Current.apiManager.sendRequest(req)
+var vm: ViewModel? = ViewModel()
+vm?.updateLocation()
+vm?.location
+vm = nil
