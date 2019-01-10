@@ -151,3 +151,14 @@ let applyComponent = Applying<ComponentViewModel> { viewModel in
 let applyViewModel: Applying<ViewModel> = applyComponent.pullback(ComponentViewModel.init)
 let vm = ViewModel(name: "Blob")
 applyViewModel.apply(vm)
+
+
+func map<A, B>(_ f: @escaping ((A) -> Void) -> Void, _ transform: @escaping (A) -> B) -> (@escaping (B) -> Void) -> Void {
+    return { callback in
+//        let g = { a in
+//            callback(transform(a))
+//        }
+//        f(g)
+        f(transform >>> callback)
+    }
+}
