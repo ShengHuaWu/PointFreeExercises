@@ -3,11 +3,10 @@ import CoreLocation
 
 class LocationManagerDelegate: NSObject, CLLocationManagerDelegate {
     private let manager: CLLocationManager
-    private let didUpdate: ([CLLocation]) -> Void
+    var didUpdate: (([CLLocation]) -> Void)?
     
-    init(manager: CLLocationManager = .init(), didUpdate: @escaping ([CLLocation]) -> Void) {
+    init(manager: CLLocationManager = .init()) {
         self.manager = manager
-        self.didUpdate = didUpdate
         
         super.init()
         
@@ -18,24 +17,30 @@ class LocationManagerDelegate: NSObject, CLLocationManagerDelegate {
         manager.startUpdatingLocation()
     }
     
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        didUpdate(locations)
+    func stop() {
         manager.stopUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        didUpdate?(locations)
     }
 }
 
-@discardableResult
-func fetchCurrentLocation(with completion: @escaping (CLLocation) -> Void) -> Any {
-    let delegate = LocationManagerDelegate { locations in
-        completion(locations.first!)
-    }
-    delegate.start()
+typealias LocationCompletion = (CLLocation) -> Void
+func makeFetchCurrentLocationImplementation() -> (@escaping LocationCompletion) -> Void {
+    let delegate = LocationManagerDelegate()
     
-    return delegate
+    return { completion in
+        delegate.didUpdate = { [weak delegate] locations in
+            completion(locations.last!)
+            delegate?.stop()
+        }
+        delegate.start()
+    }
 }
 
 struct LocationManager {
-    var fetchCurrentLocation = fetchCurrentLocation(with:)
+    var makeFetchCurrentLocation = makeFetchCurrentLocationImplementation
 }
 
 struct Environment {
@@ -45,32 +50,25 @@ struct Environment {
 var GlobalEnvironment = Environment()
 
 class ViewModel {
-    enum Constant {
-        static let locationReferenceKey = "this is a key"
-    }
-    
-    private var strongReferences: [String: Any] = [:]
     var location: CLLocation?
     
     func updateLocation() {
-        let reference = GlobalEnvironment.locationManager.fetchCurrentLocation { [weak self] location in
+        let fetchCurrentLocation = GlobalEnvironment.locationManager.makeFetchCurrentLocation()
+        fetchCurrentLocation { [weak self] location in
             guard let strongSelf = self else { return }
+            
             strongSelf.location = location
             
             // TODO: ...
-            
-            strongSelf.strongReferences.removeValue(forKey: Constant.locationReferenceKey)
         }
-        
-        strongReferences[Constant.locationReferenceKey] = reference
     }
 }
 
 var fakeLocation = CLLocation(latitude: 20, longitude: 20)
-GlobalEnvironment.locationManager.fetchCurrentLocation = { callback in
-    callback(fakeLocation)
-//    DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: { callback(fakeLocation) })
-    return ""
+GlobalEnvironment.locationManager.makeFetchCurrentLocation = {
+    return { callback in
+        callback(fakeLocation)
+    }
 }
 
 var vm: ViewModel? = ViewModel()
